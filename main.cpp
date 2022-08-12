@@ -1,117 +1,164 @@
-/*
-#include<iostream>
-#include<glad/glad.h> //  Functions performed include window definition, window control, and monitoring of keyboard and mouse input.
-#include<GLFW/glfw3.h>//GLFW is a small C library that lets you create and manage windows, OpenGL and OpenGL ES contexts and Vulkan surfaces, enumerate monitors and video modes as well as handle inputs such as keyboard, mouse, joystick, clipboard and time.
-
-
-int main(int argc, char **argv)
+#include<windows.h>//include otherwise glut lib doesnot work 
+#include<GL/gl.h> //header file for opengl
+#include <GL/glut.h>  // opengl utility toolkit 
+#include <iostream>
+#include"Header.h"
+#include<string>
+#include<cstring>
+#include<winuser.h>
+#include<stdlib.h>
+#define column 40
+#define row 40
+#define fps 10
+#define MSGBOX(x) \
+{ \
+   std::ostringstream oss; \
+   oss << x; \
+   MessageBox(oss.str().c_str(), "Msg Title", MB_OK | MB_ICONQUESTION); \
+}
+int score = 0;
+//using namespace std;
+extern short sDirection;
+bool gameover = false;
+void display_callback ();
+void init();
+void reshape(int,int );
+void timer_callback(int);
+void keyboard_callback(int, int, int);
+int main(int argc, char** argv)  // to initialize the glut libraray
 {
 	
+	glutInit(&argc, argv);// initalize the glut // passing address
+
+	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE); //selecting display mode between rbg and index
+	glutInitWindowSize(900, 900); //size of window
+	glutCreateWindow("SNAKE_GAME_BY_SAMMAN");
+	glutDisplayFunc(display_callback);//display has to be call back
+	glutReshapeFunc(reshape);// to reset viewport
+	glutTimerFunc(0,timer_callback,0);
+	glutSpecialFunc(keyboard_callback);
+	init();
+									  
+									  //glutInitWindowPosition();//to select window at particular postition
+	glutMainLoop(); //after calling this function all subroutines will be called
+	
+	/*
+	glutInit(&argc, argv);  // to initialize the glut libraray
+	glutInitDisplayMode(GLUT_RGB);   // WINDOW WILL BE OPEN IN RGB MODE
+	glutInitWindowPosition(300, 300);
+	glutInitWindowSize(500, 500);
+	
+	glutCreateWindow("window title");
+	glutDisplayFunc(display);
+	glutReshapeFunc(reshape);  // for the defining the viwport
+	glClearColor(0.0, 1.0, 1.0,1.0);   // for color mode
+	glutMainLoop();  // after completion of this loop , window will terminate
+
+	*/
 
 
 	return 0;
-}*/
-/* Code by Ratul Thakur 25th september 2016 edratulthakur@gmail.com */
-
-#include <GL/glut.h>
-#include <iostream>
-#include <fstream>
-#include "game.h"
-
-#define ROWS 40.0
-#define COLUMNS 40.0
-
-std::ofstream ofile;
-std::ifstream ifile;
-bool game_over = false;
-extern int sDirection;
-int score = 0;
-
-void init();
-void display_callback();
-void input_callback(int, int, int);
-void reshape_callback(int, int);
-void timer_callback(int);
-
-int main(int argc, char** argv)
-{
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-    glutInitWindowPosition(10, 10);
-    glutInitWindowSize(600, 600);
-    glutCreateWindow("SNAKE v1.0");
-    glutDisplayFunc(display_callback);
-    glutReshapeFunc(reshape_callback);
-    glutSpecialFunc(input_callback);
-    glutTimerFunc(100, timer_callback, 0);
-    init();
-    glutMainLoop();
-    return 0;
 }
 
-void init()
-{
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    initGrid(COLUMNS, ROWS);
-}
 
-//Callbacks
 void display_callback()
 {
-    if (game_over)
-    {
-        ofile.open("score.dat", std::ios::trunc);
-        ofile << score << std::endl;
-        ofile.close();
-        ifile.open("score.dat", std::ios::in);
-        char a[4];
-        ifile >> a;
-        std::cout << a;
-        char text[50] = "Your score : ";
-        strcat(text, a);
-        MessageBox(NULL, text, "Game Over", 0);
-        exit(0);
-    }
-    glClear(GL_COLOR_BUFFER_BIT);
-    glLoadIdentity();
-    draw_grid();
-    draw_food();
-    draw_snake();
-    glutSwapBuffers();
+	int index = 0;
+
+	
+	glClear(GL_COLOR_BUFFER_BIT);	//clears the frame buffers
+	drawGrid();
+	drawsnake();
+	drawfood();
+	glutSwapBuffers();  //buffer will swap and next frame will be displayed
+	
+	if (gameover)
+	{
+		std::string s = std::to_string(score);
+	//	char Score[10];
+	//	_itoa_s(score, Score, 10);//convert int to string
+//	std::string text = "your score :  ";
+		/*char buff[100];
+		std::string name = "stackoverflow";
+		sprintf_s(buff, "name is:%s", name.c_str());
+		std::cout << buff;
+		MessageBox(NULL, buff, "Msgtitle", MB_OK | MB_ICONQUESTION);
+		*/
+	
+	char text[100];
+	
+	std::string myString = "your score = ";
+	//int width = 1024;
+	myString += std::to_string(score);
+
+	LPWSTR ws = new wchar_t[myString.size() + 1];
+	copy(myString.begin(), myString.end(), ws);
+	ws[myString.size()] = 0; // zero at the end
+
+	MessageBox(NULL, ws, L"snake game", MB_ICONEXCLAMATION | MB_OK);
+	/// <summary>
+	/// 
+	/// </summary>
+	//sprintf_s(text, "the score is : %d", score);
+	//MessageBox(NULL, text, "Msg title", MB_OK | MB_ICONQUESTION);
+		//MessageBox(NULL,text, "",MB_OK
+		/*	MB_OK | MB_ICONEXCLAMATION
+		*/
+		exit(0);
+	}
+	glLoadIdentity();// reset the coordinate system 
+
+
+
+
+
+
+	glFlush();  //display the frame buffer
+
 }
-void reshape_callback(int w, int h)
+void init()
 {
-    glViewport(0, 0, (GLfloat)w, GLfloat(h));
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0, COLUMNS, 0.0, ROWS, -1.0, 1.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+	glClearColor(0.0, 0.0, 0.0, 1.0);
+	initGrid(column, row);
+	
 }
-void timer_callback(int)
+void reshape(int w, int h)  // this function when window is minimized or maximized or size change. 
 {
-    glutPostRedisplay();
-    glutTimerFunc(100, timer_callback, 0);
+	glViewport(0, 0,(GLsizei)w, (GLsizei)h);
+	
+	glMatrixMode(GL_PROJECTION); 
+	glLoadIdentity();//reset parameter of  matrix
+	glOrtho(0.0,column,0.0,row,-1.0,1.0);//for the projection of the objects
+	glMatrixMode(GL_MODELVIEW);
+
 }
-void input_callback(int key, int x, int y)
+void timer_callback(int )
 {
-    switch (key)
-    {
-    case GLUT_KEY_UP:
-        if (sDirection != DOWN)
-            sDirection = UP;
-        break;
-    case GLUT_KEY_DOWN:
-        if (sDirection != UP)
-            sDirection = DOWN;
-        break;
-    case GLUT_KEY_RIGHT:
-        if (sDirection != LEFT)
-            sDirection = RIGHT;
-        break;
-    case GLUT_KEY_LEFT:
-        if (sDirection != RIGHT)
-            sDirection = LEFT;
-        break;
-    }
+
+	glutPostRedisplay();//each time display function is called again
+	glutTimerFunc(1000/fps,timer_callback,0);//we want 10 fps so
+}
+void keyboard_callback(int key, int, int)
+{
+	switch (key)
+	{
+	        case GLUT_KEY_UP:  //snake doesnot rotate 180 degree
+				if (sDirection != down)
+					sDirection = up;
+				break;
+			case GLUT_KEY_DOWN:
+				if (sDirection != up)
+					sDirection = down;
+				break;
+
+			case GLUT_KEY_RIGHT:
+				if (sDirection !=left)
+					sDirection = right;
+				break;
+			case GLUT_KEY_LEFT:
+				if (sDirection !=right)
+					sDirection = left;
+				break;
+	}
+	
 }
